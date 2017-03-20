@@ -16,11 +16,11 @@ def proc(pathstr, args):
 
         if args.width_min is not None and args.width_min > image.width:
             ok = False
-        if args.width_min is not None and args.width_max < image.width:
+        if args.width_max is not None and args.width_max < image.width:
             ok = False
         if args.height_min is not None and args.height_min > image.height:
             ok = False
-        if args.height_min is not None and args.height_max < image.height:
+        if args.height_max is not None and args.height_max < image.height:
             ok = False
 
         if args.sat_avg_min is not None or args.sat_avg_max is not None:
