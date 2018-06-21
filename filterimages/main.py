@@ -3,6 +3,9 @@ from sys import stdin,stderr
 from PIL import Image
 import numpy as np
 
+import multiprocessing as mp
+from concurrent.futures import ProcessPoolExecutor
+
 def proc(pathstr, args):
     try:
         image = Image.open(pathstr)
@@ -19,15 +22,28 @@ def proc(pathstr, args):
 
         sat_avg = 0.
 
-        if args.sat_avg_min is not None or args.sat_avg_max is not None:
+        if not all(v is None for v in [
+            args.sat_avg_min, args.sat_avg_max, args.sat_stddev_min, args.sat_stddev_max]):
             hsv_arr = np.array(image.convert('HSV'), dtype=np.float32)
             s_arr = hsv_arr.transpose([2,0,1])[1].reshape([-1])
+
+        if not all(v is None for v in [args.sat_avg_min, args.sat_avg_max]):
             sat_avg = np.average(s_arr)
 
-        if args.sat_avg_min is not None and args.sat_avg_min > sat_avg:
-            ok = False
-        if args.sat_avg_max is not None and args.sat_avg_max < sat_avg:
-            ok = False
+        if args.sat_avg_min is not None:
+            ok = ok and args.sat_avg_min <= sat_avg
+        if args.sat_avg_max is not None:
+            ok = ok and args.sat_avg_max >= sat_avg
+
+        sat_stddev = 0.
+
+        if not all(v is None for v in [args.sat_stddev_min, args.sat_stddev_max]):
+            sat_stddev = np.std(s_arr)
+
+        if args.sat_stddev_min is not None:
+            ok = ok and args.sat_stddev_min <= sat_stddev
+        if args.sat_stddev_max is not None:
+            ok = ok and args.sat_stddev_max >= sat_stddev
 
         aspect_ratio = 0
 
@@ -59,6 +75,10 @@ def run():
         help="ok if average of HSV sat >= VAL")
     parser.add_argument("--sat-avg-max", type=float, default=None, metavar="VAL",
         help="ok if average of HSV sat <= VAL")
+    parser.add_argument("--sat-stddev-min", type=float, default=None, metavar="VAL",
+        help="ok if standard deviation of HSV sat >= VAL")
+    parser.add_argument("--sat-stddev-max", type=float, default=None, metavar="VAL",
+        help="ok if standard deviation of HSV sat <= VAL")
 
     parser.add_argument("--width-min", type=float, default=None, metavar="VAL",
         help="ok if width >= VAL")
@@ -80,9 +100,10 @@ def run():
 
     args =  parser.parse_args()
 
-    for line in stdin.readlines():
-        line = line.rstrip()
-        proc(line, args)
+    with ProcessPoolExecutor(max_workers=mp.cpu_count()) as p_exec:
+        for line in stdin.readlines():
+            line = line.rstrip()
+            p_exec.submit(proc, line, args)
 
 if __name__ == '__main__':
     run()

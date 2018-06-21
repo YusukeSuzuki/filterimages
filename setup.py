@@ -17,4 +17,3 @@ setup(name='filterimages',
     ],
     zip_safe=False)
 
-
