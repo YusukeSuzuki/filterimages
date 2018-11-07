@@ -6,6 +6,9 @@ import numpy as np
 import multiprocessing as mp
 from concurrent.futures import ProcessPoolExecutor
 
+lock = mp.Lock()
+err_lock = mp.Lock()
+
 def proc(pathstr, args):
     try:
         image = Image.open(pathstr)
@@ -62,11 +65,14 @@ def proc(pathstr, args):
             ok = False
 
         if ok:
-            print(pathstr)
+            with lock:
+                print(pathstr)
     except FileNotFoundError as e:
-        print('FileNotFoundError: {}'.format(pathstr), file=stderr)
+        with err_lock:
+            print('FileNotFoundError: {}'.format(pathstr), file=stderr)
     except ValueError as e:
-        print('ValueError(something occuerd on image conversion): {}'.format(pathstr), file=stderr)
+        with err_lock:
+            print('ValueError(something occuerd on image conversion): {}'.format(pathstr), file=stderr)
 
 def run():
     parser = ap.ArgumentParser(description="filter images with conditions")
