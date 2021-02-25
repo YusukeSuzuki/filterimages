@@ -1,13 +1,14 @@
 from setuptools import setup
 
-setup(name='filterimages',
+setup(
+    name='filterimages',
     version='0.1.0',
     desctiption='filter image file with many conditions',
     author='Yusuke Suzuki',
     license='MIT',
     packages=['filterimages'],
     entry_points={
-        'console_scripts':[
+        'console_scripts': [
             'filterimages = filterimages.main:run'
         ]
     },
@@ -16,4 +17,3 @@ setup(name='filterimages',
         'numpy'
     ],
     zip_safe=False)
-

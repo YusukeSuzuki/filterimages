@@ -1,5 +1,5 @@
 import argparse as ap
-from sys import stdin,stderr
+from sys import stdin, stderr
 from PIL import Image
 import numpy as np
 
@@ -8,6 +8,7 @@ from concurrent.futures import ProcessPoolExecutor
 
 lock = mp.Lock()
 err_lock = mp.Lock()
+
 
 def proc(pathstr, args):
     try:
@@ -26,9 +27,10 @@ def proc(pathstr, args):
         sat_avg = 0.
 
         if not all(v is None for v in [
-            args.sat_avg_min, args.sat_avg_max, args.sat_stddev_min, args.sat_stddev_max]):
+                args.sat_avg_min, args.sat_avg_max,
+                args.sat_stddev_min, args.sat_stddev_max]):
             hsv_arr = np.array(image.convert('HSV'), dtype=np.float32)
-            s_arr = hsv_arr.transpose([2,0,1])[1].reshape([-1])
+            s_arr = hsv_arr.transpose([2, 0, 1])[1].reshape([-1])
 
         if not all(v is None for v in [args.sat_avg_min, args.sat_avg_max]):
             sat_avg = np.average(s_arr)
@@ -40,7 +42,8 @@ def proc(pathstr, args):
 
         sat_stddev = 0.
 
-        if not all(v is None for v in [args.sat_stddev_min, args.sat_stddev_max]):
+        if not all(v is None for v in [
+                args.sat_stddev_min, args.sat_stddev_max]):
             sat_stddev = np.std(s_arr)
 
         if args.sat_stddev_min is not None:
@@ -69,48 +72,61 @@ def proc(pathstr, args):
                 print(pathstr)
     except FileNotFoundError as e:
         with err_lock:
-            print('FileNotFoundError: {}'.format(pathstr), file=stderr)
+            print('FileNotFoundError: {}, {}'.format(pathstr, e), file=stderr)
     except ValueError as e:
         with err_lock:
-            print('ValueError(something occuerd on image conversion): {}'.format(pathstr), file=stderr)
+            print('ValueError(something occuerd on image conversion): {}, {}'.format(pathstr, e), file=stderr)
+
 
 def run():
     parser = ap.ArgumentParser(description="filter images with conditions")
 
-    parser.add_argument("--sat-avg-min", type=float, default=None, metavar="VAL",
+    parser.add_argument(
+        "--sat-avg-min", type=float, default=None, metavar="VAL",
         help="ok if average of HSV sat >= VAL")
-    parser.add_argument("--sat-avg-max", type=float, default=None, metavar="VAL",
+    parser.add_argument(
+        "--sat-avg-max", type=float, default=None, metavar="VAL",
         help="ok if average of HSV sat <= VAL")
-    parser.add_argument("--sat-stddev-min", type=float, default=None, metavar="VAL",
+    parser.add_argument(
+        "--sat-stddev-min", type=float, default=None, metavar="VAL",
         help="ok if standard deviation of HSV sat >= VAL")
-    parser.add_argument("--sat-stddev-max", type=float, default=None, metavar="VAL",
+    parser.add_argument(
+        "--sat-stddev-max", type=float, default=None, metavar="VAL",
         help="ok if standard deviation of HSV sat <= VAL")
 
-    parser.add_argument("--width-min", type=float, default=None, metavar="VAL",
+    parser.add_argument(
+        "--width-min", type=float, default=None, metavar="VAL",
         help="ok if width >= VAL")
-    parser.add_argument("--width-max", type=float, default=None, metavar="VAL",
+    parser.add_argument(
+        "--width-max", type=float, default=None, metavar="VAL",
         help="ok if width <= VAL")
-    parser.add_argument("--height-min", type=float, default=None, metavar="VAL",
+    parser.add_argument(
+        "--height-min", type=float, default=None, metavar="VAL",
         help="ok if height >= VAL")
-    parser.add_argument("--height-max", type=float, default=None, metavar="VAL",
+    parser.add_argument(
+        "--height-max", type=float, default=None, metavar="VAL",
         help="ok if height <= VAL")
 
-    parser.add_argument("--aspect-min", type=float, default=None, metavar="VAL",
+    parser.add_argument(
+        "--aspect-min", type=float, default=None, metavar="VAL",
         help="ok if width / height >= VAL")
-    parser.add_argument("--aspect-max", type=float, default=None, metavar="VAL",
+    parser.add_argument(
+        "--aspect-max", type=float, default=None, metavar="VAL",
         help="ok if width / height <= VAL")
-    parser.add_argument("--max-aspect-min", type=float, default=None, metavar="VAL",
+    parser.add_argument(
+        "--max-aspect-min", type=float, default=None, metavar="VAL",
         help="ok if max(width / height, height / width) >= VAL")
-    parser.add_argument("--max-aspect-max", type=float, default=None, metavar="VAL",
+    parser.add_argument(
+        "--max-aspect-max", type=float, default=None, metavar="VAL",
         help="ok if max(width / height, height / width) <= VAL")
 
-    args =  parser.parse_args()
+    args = parser.parse_args()
 
     with ProcessPoolExecutor(max_workers=mp.cpu_count()) as p_exec:
         for line in stdin.readlines():
             line = line.rstrip()
             p_exec.submit(proc, line, args)
 
+
 if __name__ == '__main__':
     run()
-
