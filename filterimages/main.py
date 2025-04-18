@@ -69,7 +69,7 @@ def proc(pathstr, args):
 
         if ok:
             with lock:
-                print(pathstr)
+                print(pathstr, flush=True)
     except FileNotFoundError as e:
         with err_lock:
             print('FileNotFoundError: {}, {}'.format(pathstr, e), file=stderr)
@@ -123,7 +123,7 @@ def run():
     args = parser.parse_args()
 
     with ProcessPoolExecutor(max_workers=mp.cpu_count()) as p_exec:
-        for line in stdin.readlines():
+        for line in stdin:
             line = line.rstrip()
             p_exec.submit(proc, line, args)
 
